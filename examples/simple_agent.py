@@ -20,20 +20,9 @@ from agent_builder.llm_providers.anthropic_llm import AnthropicLLM
 from agent_builder.llm_providers.anaconda_llm import AnacondaLLM
 from agent_builder.utils import print_banner
 from agent_builder.llm_providers import CommandLLM
-
-
-class LangChainLLMWrapper:
-    def __init__(self, provider="openai", model=None, api_key=None, base_url=None):
-        if provider == "openai":
-            self.llm = ChatOpenAI(model=model or "gpt-3.5-turbo", api_key=api_key, base_url=base_url)
-        elif provider == "anthropic":
-            self.llm = ChatAnthropic(model=model or "claude-3-opus-20240229", api_key=api_key, base_url=base_url)
-        elif provider == "ollama":
-            self.llm = ChatOllama(model=model or "llama2", base_url=base_url)
-        else:
-            raise ValueError(f"Unsupported provider: {provider}")
-    def generate(self, prompt):
-        return self.llm.invoke(prompt).content
+from agent_builder.tools.token_counter_tool import TokenCounterTool
+from agent_builder.tools.format_response_tool import FormatResponseTool
+from agent_builder.langchain_llm_wrapper import LangChainLLMWrapper
 
 
 def main():
@@ -85,7 +74,7 @@ def main():
                 print("Unsupported provider. Returning to main menu.")
                 continue
             llm = LangChainLLMWrapper(provider=provider_key, model=model, api_key=api_key, base_url=base_url)
-            planner = Planner(llm=llm)
+            planner = Planner(llm=llm, prompt_template="User: {input}\n")
             executor = Executor()
             agent = Agent(memory, planner, executor)
             print(f"Type 'exit' to return to main menu. Using LangChain provider: {provider_name}, model: {model}")
@@ -93,6 +82,11 @@ def main():
                 user_input = input("You: ")
                 if user_input.lower() == 'exit':
                     break
+                if user_input.strip().lower().startswith('echo'):
+                    executor = Executor()
+                    text = user_input[len('echo'):].strip().strip('"')
+                    print(f"Agent: {executor.echo_tool.run(text)}")
+                    continue
                 try:
                     result = agent.act(user_input)
                     print(f"Agent: {result}")
@@ -181,6 +175,11 @@ def main():
                         user_input = input("You: ")
                         if user_input.lower() == 'exit':
                             break
+                        if user_input.strip().lower().startswith('echo'):
+                            executor = Executor()
+                            text = user_input[len('echo'):].strip().strip('"')
+                            print(f"Agent: {executor.echo_tool.run(text)}")
+                            continue
                         try:
                             result = agent.act(user_input)
                             print(f"Agent: {result}")
