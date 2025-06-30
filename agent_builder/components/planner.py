@@ -4,6 +4,7 @@ from ..llm_providers.openai_llm import OpenAILLM
 from ..llm_providers.anthropic_llm import AnthropicLLM
 from ..llm_providers.anaconda_llm import AnacondaLLM
 from .memory import Memory
+import os
 
 class Planner:
     """
@@ -18,16 +19,25 @@ class Planner:
         return self.llm.generate(prompt)
 
 class OllamaPlanner(Planner):
-    def __init__(self, model: str = "llama2"):
+    def __init__(self, model: str = None):
+        # Use environment variable or fallback to 'llama2'
+        model = model or os.getenv("OLLAMA_DEFAULT_MODEL", "llama2")
         super().__init__(OllamaLLM(model=model), prompt_template="User: {input}\n")
 
 class OpenAIPlanner(Planner):
-    def __init__(self, model: str = "gpt-3.5-turbo"):
+    def __init__(self, model: str = None):
+        # Use environment variable or fallback to 'gpt-3.5-turbo'
+        model = model or os.getenv("OPENAI_DEFAULT_MODEL", "gpt-3.5-turbo")
         super().__init__(OpenAILLM(model=model), prompt_template="User: {input}\n")
 
 class AnthropicPlanner(Planner):
-    def __init__(self, model: str = "claude-3-opus-20240229"):
+    def __init__(self, model: str = None):
+        # Use environment variable or fallback to 'claude-3-opus-20240229'
+        model = model or os.getenv("ANTHROPIC_DEFAULT_MODEL", "claude-3-opus-20240229")
         super().__init__(AnthropicLLM(model=model), prompt_template="User: {input}\n")
+
+# Note: If the selected model is not available or accessible, the LLM provider should raise a clear error during generation.
+# Consider adding try/except blocks in the LLM provider's generate method for robust error handling.
 
 class AnacondaPlanner(Planner):
     def __init__(self, model: str = None):
