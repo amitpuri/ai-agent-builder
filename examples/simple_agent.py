@@ -28,6 +28,12 @@ from agent_builder.langchain_llm_wrapper import LangChainLLMWrapper
 def main():
     print_banner()
     memory = Memory()
+    verbose = False
+
+    # Ask user if they want verbose mode
+    verbose_choice = input("Enable verbose output (show full LLM response details)? (y/n): ").strip().lower()
+    if verbose_choice == 'y':
+        verbose = True
 
     while True:
         print("Select LLM backend:")
@@ -88,7 +94,8 @@ def main():
                     print(f"Agent: {executor.echo_tool.run(text)}")
                     continue
                 try:
-                    result = agent.act(user_input)
+                    # Use verbose output if enabled
+                    result = agent.act(user_input, format_response=True, show_full_details=verbose)
                     print(f"Agent: {result}")
                 except Exception as e:
                     print(f"[Error] {type(e).__name__}: {e}")
@@ -181,7 +188,8 @@ def main():
                             print(f"Agent: {executor.echo_tool.run(text)}")
                             continue
                         try:
-                            result = agent.act(user_input)
+                            # Use verbose output if enabled
+                            result = agent.act(user_input, format_response=True, show_full_details=verbose)
                             print(f"Agent: {result}")
                         except Exception as e:
                             print(f"[Error] {type(e).__name__}: {e}")

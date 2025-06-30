@@ -2,7 +2,10 @@ import unittest
 from agent_builder.agent import Agent
 from agent_builder.components.memory import Memory
 from agent_builder.components.planner import Planner, OllamaPlanner, OpenAIPlanner, AnthropicPlanner, AnacondaPlanner
-from agent_builder.components.executor import Executor
+from agent_builder.components.executor import Executor, ToolRegistry
+from agent_builder.tools.echo_tool import EchoTool
+from agent_builder.tools.format_response_tool import FormatResponseTool
+from agent_builder.tools.token_counter_tool import TokenCounterTool
 from langchain_openai import ChatOpenAI
 import sys
 from dotenv import load_dotenv
@@ -27,49 +30,68 @@ class LangChainLLMWrapper:
 class TestAgent(unittest.TestCase):
     def test_agent_act(self):
         memory = Memory()
-        planner = Planner(llm=MockLLM("echo"))
+        planner = Planner(llm=MockLLM("echo: hello"))
         executor = Executor()
         agent = Agent(memory, planner, executor)
         result = agent.act('hello')
-        self.assertEqual(result, 'echo')
+        self.assertEqual(result, 'Echo: hello')
         self.assertEqual(memory.get_history()[0]['input'], 'hello')
-        self.assertEqual(memory.get_history()[0]['result'], 'echo')
+        self.assertEqual(memory.get_history()[0]['result'], 'Echo: hello')
+
+    def test_tool_registry(self):
+        registry = ToolRegistry()
+        registry.register('echo', EchoTool())
+        registry.register('format_response', FormatResponseTool())
+        registry.register('token_counter', TokenCounterTool())
+        self.assertIsInstance(registry.get('echo'), EchoTool)
+        self.assertIsInstance(registry.get('format_response'), FormatResponseTool)
+        self.assertIsInstance(registry.get('token_counter'), TokenCounterTool)
+        self.assertIsNone(registry.get('nonexistent'))
+
+    def test_executor_error_handling(self):
+        executor = Executor()
+        # Action with unknown tool
+        result = executor.execute({'tool': 'nonexistent', 'input_text': 'test'})
+        self.assertIn('Error: Tool', result)
+        # Malformed action
+        result = executor.execute({'input_text': 'test'})
+        self.assertIn('Error', str(result))
 
     def test_ollama_planner(self):
         planner = OllamaPlanner()
-        planner.llm = MockLLM("ollama response")
+        planner.llm = MockLLM("echo: ollama response")
         agent = Agent(Memory(), planner, Executor())
         result = agent.act('test')
-        self.assertEqual(result, 'ollama response')
+        self.assertEqual(result, 'Echo: ollama response')
 
     def test_openai_planner(self):
         planner = OpenAIPlanner()
-        planner.llm = MockLLM("openai response")
+        planner.llm = MockLLM("echo: openai response")
         agent = Agent(Memory(), planner, Executor())
         result = agent.act('test')
-        self.assertEqual(result, 'openai response')
+        self.assertEqual(result, 'Echo: openai response')
 
     def test_anthropic_planner(self):
         planner = AnthropicPlanner()
-        planner.llm = MockLLM("anthropic response")
+        planner.llm = MockLLM("echo: anthropic response")
         agent = Agent(Memory(), planner, Executor())
         result = agent.act('test')
-        self.assertEqual(result, 'anthropic response')
+        self.assertEqual(result, 'Echo: anthropic response')
 
     def test_anaconda_planner(self):
         planner = AnacondaPlanner()
-        planner.llm = MockLLM("anaconda response")
+        planner.llm = MockLLM("echo: anaconda response")
         agent = Agent(Memory(), planner, Executor())
         result = agent.act('test')
-        self.assertEqual(result, 'anaconda response')
+        self.assertEqual(result, 'Echo: anaconda response')
 
     def test_langchain_openai_llm(self):
         memory = Memory()
-        planner = Planner(llm=MockLLM("langchain response"))
+        planner = Planner(llm=MockLLM("echo: langchain response"))
         executor = Executor()
         agent = Agent(memory, planner, executor)
         result = agent.act('hello')
-        self.assertEqual(result, 'langchain response')
+        self.assertEqual(result, 'Echo: langchain response')
 
 if __name__ == '__main__':
     print("Select LLM backend:")
@@ -84,6 +106,8 @@ if __name__ == '__main__':
         suite.addTest(TestAgent('test_langchain_openai_llm'))
     elif choice == '2':
         suite.addTest(TestAgent('test_agent_act'))
+        suite.addTest(TestAgent('test_tool_registry'))
+        suite.addTest(TestAgent('test_executor_error_handling'))
         suite.addTest(TestAgent('test_ollama_planner'))
         suite.addTest(TestAgent('test_openai_planner'))
         suite.addTest(TestAgent('test_anthropic_planner'))

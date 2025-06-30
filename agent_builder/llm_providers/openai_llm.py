@@ -38,7 +38,7 @@ class OpenAILLM:
 
     def generate(self, prompt):
         if not self.token_counter.run(prompt):
-            return "Aborted by user due to token count."
+            return {"content": "Aborted by user due to token count.", "raw": None}
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -46,8 +46,14 @@ class OpenAILLM:
             )
             # Convert OpenAI response to dict for formatting
             response_dict = response.model_dump() if hasattr(response, 'model_dump') else response.__dict__
-            return self.formatter.run(response_dict)
+            # Extract the main content for the planner
+            choices = response_dict.get("choices")
+            if choices and isinstance(choices, list) and "message" in choices[0]:
+                content = choices[0]["message"].get("content", "")
+            else:
+                content = str(response)
+            return {"content": content, "raw": response_dict}
         except APITimeoutError:
-            return "The request to OpenAI timed out. Please try again."
+            return {"content": "The request to OpenAI timed out. Please try again.", "raw": None}
         except Exception as e:
-            return f"An error occurred with OpenAI: {e}" 
+            return {"content": f"An error occurred with OpenAI: {e}", "raw": None} 

@@ -3,9 +3,11 @@ from typing import Any
 
 class FormatResponseTool:
     """
-    Tool to format LLM responses. Can trim whitespace, add prefixes, or apply markdown formatting. If the response is a dict (parsed JSON), show all relevant fields, including tools, choices, and usage. If the response is an object, show all its attributes.
+    Tool to format LLM responses. Implements the unified tool interface: run(input_text: Any, context: Any = None) -> str.
+    Can trim whitespace, add prefixes, or apply markdown formatting. If the response is a dict (parsed JSON), show all relevant fields, including tools, choices, and usage. If the response is an object, show all its attributes.
     """
-    def run(self, response: Any) -> str:
+    def run(self, input_text: Any, context: Any = None) -> str:
+        response = input_text
         # If response is a string, format as before
         if isinstance(response, str):
             formatted = response.strip()

@@ -18,13 +18,20 @@ class LangChainLLMWrapper:
         self.formatter = FormatResponseTool()
     def generate(self, prompt):
         if not self.token_counter.run(prompt):
-            return "Aborted by user due to token count."
+            return {"content": "Aborted by user due to token count.", "raw": None}
         raw_response = self.llm.invoke(prompt)
-        # Try to extract metadata if available
-        response_dict = {
-            "content": getattr(raw_response, "content", str(raw_response)),
-            "additional_kwargs": getattr(raw_response, "additional_kwargs", {}),
-            "response_metadata": getattr(raw_response, "response_metadata", {}),
-            "type": getattr(raw_response, "type", None),
-        }
-        return self.formatter.run(response_dict) 
+        content = getattr(raw_response, "content", str(raw_response))
+        # Convert to dict if possible for FormatResponseTool
+        if hasattr(raw_response, '__dict__'):
+            raw = raw_response.__dict__
+        else:
+            raw = {"content": content}
+        return {"content": content, "raw": raw}
+        # If you want to display formatted output elsewhere, use:
+        # response_dict = {
+        #     "content": getattr(raw_response, "content", str(raw_response)),
+        #     "additional_kwargs": getattr(raw_response, "additional_kwargs", {}),
+        #     "response_metadata": getattr(raw_response, "response_metadata", {}),
+        #     "type": getattr(raw_response, "type", None),
+        # }
+        # return self.formatter.run(response_dict) 
