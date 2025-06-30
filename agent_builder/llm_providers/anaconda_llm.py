@@ -5,13 +5,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class AnacondaLLM:
-    def __init__(self, model=None, api_key=None, base_url="http://127.0.0.1:8080"):
+    def __init__(self, model=None, api_key=None, base_url="http://127.0.0.1:8080", timeout=60):
         self.base_url = base_url
         self.api_key = api_key or os.getenv("ANACONDA_API_KEY")
+        self.timeout = timeout
         # Health check before proceeding
         health_url = f"{self.base_url}/health"
         try:
-            health_response = requests.get(health_url)
+            health_response = requests.get(health_url, timeout=self.timeout)
             if health_response.status_code != 200:
                 raise RuntimeError(f"Anaconda LLM health check failed: {health_response.status_code} {health_response.text}")
         except Exception as e:
@@ -28,7 +29,7 @@ class AnacondaLLM:
         url = f"{self.base_url}/models"
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
         try:
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, timeout=self.timeout)
             response.raise_for_status()
             data = response.json()
             models = []
@@ -62,7 +63,7 @@ class AnacondaLLM:
             "prompt": prompt
         }
         print(f"[AnacondaLLM] Sending payload: {payload}")  # Debug print
-        response = requests.post(url, headers=headers, json=payload)
+        response = requests.post(url, headers=headers, json=payload, timeout=self.timeout)
         try:
             response.raise_for_status()
             data = response.json()
