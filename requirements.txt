@@ -6,3 +6,8 @@ openai
 anthropic
 python-dotenv
 pydantic>=2.10.6,<3.0.0
+langchain>=0.1.0
+langchain-openai>=0.1.0
+langchain-anthropic>=0.1.0
+# Ollama support is now in langchain-ollama, import as: from langchain_ollama import ChatOllama
+langchain-ollama>=0.1.0
