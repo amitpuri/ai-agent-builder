@@ -53,16 +53,17 @@ class AnacondaLLM:
         return []
 
     def generate(self, prompt):
-        url = f"{self.base_url}/completions"
+        url = f"{self.base_url}/completion"
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PowerShell/7.2.0",
+            "Connection": "close"
         }
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
         payload = {
-            "model": self.model,
             "prompt": prompt
         }
-        print(f"[AnacondaLLM] Sending payload: {payload}")  # Debug print
         try:
             response = requests.post(url, headers=headers, json=payload, timeout=self.timeout)
             response.raise_for_status()
@@ -74,7 +75,6 @@ class AnacondaLLM:
             elif "choices" in data and data["choices"]:
                 return data["choices"][0].get("text", "").strip()
             else:
-                print("AnacondaLLM unexpected response:", data)
                 return str(data)
         except requests.exceptions.Timeout:
             return "The request to Anaconda timed out. Please try again."

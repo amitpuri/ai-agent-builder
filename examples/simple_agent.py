@@ -67,7 +67,11 @@ def main():
                 selected_model = models[0]
             print(f"\nUsing {provider_name} model: {selected_model}\n")
 
-            selected_model_name = selected_model.split(" (Running)")[0]
+            if provider_name == "Anaconda":
+                selected_model_name = selected_model  # Use full path
+                print(f"[DEBUG] Passing full model path to AnacondaPlanner: {selected_model_name}")
+            else:
+                selected_model_name = selected_model.split(" (Running)")[0]
             planner = PlannerClass(model=selected_model_name)
             executor = Executor()
             agent = Agent(memory, planner, executor)

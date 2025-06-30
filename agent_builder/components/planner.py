@@ -1,42 +1,34 @@
+from typing import Any
 from ..llm_providers.ollama_llm import OllamaLLM
 from ..llm_providers.openai_llm import OpenAILLM
 from ..llm_providers.anthropic_llm import AnthropicLLM
 from ..llm_providers.anaconda_llm import AnacondaLLM
+from .memory import Memory
 
 class Planner:
-    def plan(self, input_data, memory):
-        # For demonstration, just echo the input as the plan
-        return input_data
+    """
+    Base Planner class. Uses a prompt template and an LLM provider.
+    """
+    def __init__(self, llm: Any, prompt_template: str = "{input}"):
+        self.llm = llm
+        self.prompt_template = prompt_template
 
-class OllamaPlanner:
-    def __init__(self, model="llama2"):
-        self.llm = OllamaLLM(model=model)
-
-    def plan(self, input_data, memory):
-        # Optionally include memory/history in the prompt
-        prompt = f"User: {input_data}\n"
+    def plan(self, input_data: str, memory: Memory) -> str:
+        prompt = self.prompt_template.format(input=input_data, memory=memory.get_context())
         return self.llm.generate(prompt)
 
-class OpenAIPlanner:
-    def __init__(self, model="gpt-3.5-turbo"):
-        self.llm = OpenAILLM(model=model)
+class OllamaPlanner(Planner):
+    def __init__(self, model: str = "llama2"):
+        super().__init__(OllamaLLM(model=model), prompt_template="User: {input}\n")
 
-    def plan(self, input_data, memory):
-        prompt = f"User: {input_data}\n"
-        return self.llm.generate(prompt)
+class OpenAIPlanner(Planner):
+    def __init__(self, model: str = "gpt-3.5-turbo"):
+        super().__init__(OpenAILLM(model=model), prompt_template="User: {input}\n")
 
-class AnthropicPlanner:
-    def __init__(self, model="claude-3-opus-20240229"):
-        self.llm = AnthropicLLM(model=model)
+class AnthropicPlanner(Planner):
+    def __init__(self, model: str = "claude-3-opus-20240229"):
+        super().__init__(AnthropicLLM(model=model), prompt_template="User: {input}\n")
 
-    def plan(self, input_data, memory):
-        prompt = f"User: {input_data}\n"
-        return self.llm.generate(prompt)
-
-class AnacondaPlanner:
-    def __init__(self, model=None):
-        self.llm = AnacondaLLM(model=model)
-
-    def plan(self, input_data, memory):
-        prompt = f"User: {input_data}\n"
-        return self.llm.generate(prompt) 
+class AnacondaPlanner(Planner):
+    def __init__(self, model: str = None):
+        super().__init__(AnacondaLLM(model=model), prompt_template="{input}") 
