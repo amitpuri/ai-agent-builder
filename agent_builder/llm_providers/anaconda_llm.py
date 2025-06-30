@@ -63,8 +63,8 @@ class AnacondaLLM:
             "prompt": prompt
         }
         print(f"[AnacondaLLM] Sending payload: {payload}")  # Debug print
-        response = requests.post(url, headers=headers, json=payload, timeout=self.timeout)
         try:
+            response = requests.post(url, headers=headers, json=payload, timeout=self.timeout)
             response.raise_for_status()
             data = response.json()
             if "content" in data:
@@ -76,6 +76,7 @@ class AnacondaLLM:
             else:
                 print("AnacondaLLM unexpected response:", data)
                 return str(data)
-        except Exception:
-            print("AnacondaLLM error:", response.text)
-            raise 
+        except requests.exceptions.Timeout:
+            return "The request to Anaconda timed out. Please try again."
+        except requests.exceptions.RequestException as e:
+            return f"An error occurred with Anaconda: {e}"

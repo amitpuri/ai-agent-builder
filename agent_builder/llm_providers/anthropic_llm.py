@@ -1,13 +1,16 @@
 import anthropic
+from anthropic import APITimeoutError
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
 class AnthropicLLM:
-    def __init__(self, model=None, api_key=None):
+    def __init__(self, model=None, api_key=None, timeout=60):
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
-        self.client = anthropic.Anthropic(api_key=self.api_key)
+        if not self.api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY is not set.")
+        self.client = anthropic.Anthropic(api_key=self.api_key, timeout=timeout)
         self.model = model or self.get_first_model()
 
     def get_first_model(self):
@@ -30,9 +33,14 @@ class AnthropicLLM:
         ]
 
     def generate(self, prompt):
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=512,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.content[0].text.strip() 
+        try:
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=512,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.content[0].text.strip()
+        except APITimeoutError:
+            return "The request to Anthropic timed out. Please try again."
+        except Exception as e:
+            return f"An error occurred with Anthropic: {e}" 

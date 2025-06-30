@@ -1,13 +1,15 @@
-from openai import OpenAI
+from openai import OpenAI, APITimeoutError
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
 class OpenAILLM:
-    def __init__(self, model=None, api_key=None):
+    def __init__(self, model=None, api_key=None, timeout=60):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.client = OpenAI(api_key=self.api_key)
+        if not self.api_key:
+            raise RuntimeError("OPENAI_API_KEY is not set.")
+        self.client = OpenAI(api_key=self.api_key, timeout=timeout)
         self.model = model or self.get_first_model()
 
     def get_first_model(self):
@@ -29,8 +31,13 @@ class OpenAILLM:
         return models
 
     def generate(self, prompt):
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content.strip() 
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.choices[0].message.content.strip()
+        except APITimeoutError:
+            return "The request to OpenAI timed out. Please try again."
+        except Exception as e:
+            return f"An error occurred with OpenAI: {e}" 

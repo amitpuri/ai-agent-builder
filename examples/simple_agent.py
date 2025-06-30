@@ -22,49 +22,67 @@ def main():
     print_banner()
     memory = Memory()
 
-    providers = [
-        ("Ollama", OllamaLLM, OllamaPlanner),
-        ("OpenAI", OpenAILLM, OpenAIPlanner),
-        ("Anthropic", AnthropicLLM, AnthropicPlanner),
-        ("Anaconda", AnacondaLLM, AnacondaPlanner)
-    ]
-    print("Available LLM providers:")
-    for idx, (provider_name, _, _) in enumerate(providers):
-        print(f"  {idx+1}. {provider_name}")
-    try:
-        selected_idx = int(input("Select a provider (1-4): ")) - 1
-        provider_name, LLMClass, PlannerClass = providers[selected_idx]
-    except Exception:
-        print("Invalid selection. Defaulting to Ollama.")
-        provider_name, LLMClass, PlannerClass = providers[0]
-
-    llm = LLMClass()
-    models = llm.list_models()
-    if not models:
-        print(f"No {provider_name} models found or API key missing.")
-        return
-    print(f"Available {provider_name} models:")
-    for idx, model in enumerate(models):
-        print(f"  {idx+1}. {model}")
-    try:
-        selected_model_idx = int(input(f"Select a model (1-{len(models)}): ")) - 1
-        selected_model = models[selected_model_idx]
-    except Exception:
-        print("Invalid selection. Using the first model.")
-        selected_model = models[0]
-    print(f"\nUsing {provider_name} model: {selected_model}\n")
-
-    planner = PlannerClass(model=selected_model)
-    executor = Executor()
-    agent = Agent(memory, planner, executor)
-
-    print("Type 'exit' to quit.")
     while True:
-        user_input = input("You: ")
-        if user_input.lower() == 'exit':
-            break
-        result = agent.act(user_input)
-        print(f"Agent: {result}")
+        providers = [
+            ("Ollama", OllamaLLM, OllamaPlanner),
+            ("OpenAI", OpenAILLM, OpenAIPlanner),
+            ("Anthropic", AnthropicLLM, AnthropicPlanner),
+            ("Anaconda", AnacondaLLM, AnacondaPlanner)
+        ]
+        print("Available LLM providers:")
+        for idx, (provider_name, _, _) in enumerate(providers):
+            print(f"  {idx+1}. {provider_name}")
+        print(f"  {len(providers)+1}. Exit")
+        try:
+            selection = input(f"Select a provider (1-{len(providers)+1}): ")
+            if not selection:
+                print("Invalid selection. Please try again.")
+                continue
+            selected_idx = int(selection) - 1
+            if selected_idx == len(providers):
+                print("Exiting...")
+                break
+            provider_name, LLMClass, PlannerClass = providers[selected_idx]
+        except (ValueError, IndexError):
+            print("Invalid selection. Please try again.")
+            continue
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            continue
+
+        try:
+            llm = LLMClass()
+            models = llm.list_models()
+            if not models:
+                print(f"No {provider_name} models found or API key missing.")
+                continue
+            print(f"Available {provider_name} models:")
+            for idx, model in enumerate(models):
+                print(f"  {idx+1}. {model}")
+            try:
+                selected_model_idx = int(input(f"Select a model (1-{len(models)}): ")) - 1
+                selected_model = models[selected_model_idx]
+            except Exception:
+                print("Invalid selection. Using the first model.")
+                selected_model = models[0]
+            print(f"\nUsing {provider_name} model: {selected_model}\n")
+
+            selected_model_name = selected_model.split(" (Running)")[0]
+            planner = PlannerClass(model=selected_model_name)
+            executor = Executor()
+            agent = Agent(memory, planner, executor)
+
+            print("Type 'exit' to quit.")
+            while True:
+                user_input = input("You: ")
+                if user_input.lower() == 'exit':
+                    break
+                result = agent.act(user_input)
+                print(f"Agent: {result}")
+        except RuntimeError as e:
+            print(f"\nError: {e}\n")
+            continue
+
 
 if __name__ == "__main__":
     main() 
