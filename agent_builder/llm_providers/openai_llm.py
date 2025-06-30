@@ -5,12 +5,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class OpenAILLM:
-    def __init__(self, model=None, api_key=None, timeout=60):
+    def __init__(self, model=None, api_key=None, base_url=None, timeout=60):
+        self.base_url = base_url or os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise RuntimeError("OPENAI_API_KEY is not set.")
         self.client = OpenAI(api_key=self.api_key, timeout=timeout)
         self.model = model or self.get_first_model()
+        self.timeout = timeout
 
     def get_first_model(self):
         models = self.list_models()

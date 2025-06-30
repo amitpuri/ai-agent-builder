@@ -1,8 +1,9 @@
 import requests
+import os
 
 class OllamaLLM:
-    def __init__(self, model=None, base_url="http://localhost:11434", timeout=60):
-        self.base_url = base_url
+    def __init__(self, model=None, base_url=None, timeout=60):
+        self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
         self.timeout = timeout
         # Health check before proceeding
         try:
@@ -11,7 +12,7 @@ class OllamaLLM:
                 raise RuntimeError(f"Ollama health check failed: {health_response.status_code} {health_response.text}")
         except Exception as e:
             raise RuntimeError(f"Ollama health check failed: {e}")
-        self.model = model or self.get_first_model()
+        self.model = model or "llama2"
 
     def get_first_model(self):
         models = self.list_models()

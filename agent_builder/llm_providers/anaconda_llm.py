@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class AnacondaLLM:
-    def __init__(self, model=None, api_key=None, base_url="http://127.0.0.1:8080", timeout=60):
-        self.base_url = base_url
+    def __init__(self, model=None, api_key=None, base_url=None, timeout=60):
+        self.base_url = base_url or os.getenv("ANACONDA_BASE_URL", "http://127.0.0.1:8080")
         self.api_key = api_key or os.getenv("ANACONDA_API_KEY")
         self.timeout = timeout
         # Health check before proceeding

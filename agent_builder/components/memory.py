@@ -1,4 +1,5 @@
 from typing import List, Dict
+import logging
 
 class Memory:
     """
@@ -14,7 +15,14 @@ class Memory:
             self.history.pop(0)
 
     def get_context(self) -> str:
-        return "\n".join([f"User: {h['user']}\nAgent: {h['agent']}" for h in self.history])
+        lines = []
+        for h in self.history:
+            if isinstance(h, dict) and "user" in h and "agent" in h:
+                lines.append(f"User: {h['user']}\nAgent: {h['agent']}")
+            else:
+                logging.warning(f"Malformed memory entry skipped: {h}")
+                continue
+        return "\n".join(lines)
 
     def reset(self) -> None:
         self.history = []
