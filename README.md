@@ -3,16 +3,18 @@
 A modular Python framework for building, customizing, and running AI agents with pluggable components (memory, planner, executor, etc).
 
 ## Features
-- Modular agent architecture
-- Easy to extend with custom components
+- Modular agent architecture (Memory, Planner, Executor)
+- Unified interface for multiple LLM providers
+- Easy to extend with custom components or providers
 - Example agent included
 - **Supports multiple LLM providers:**
   - Ollama (local models)
   - OpenAI (GPT models)
   - Anthropic (Claude models)
   - Anaconda AI Navigator (local or cloud models)
-- Provider and model selection at runtime
-- `.env` support for API keys
+- Provider and model selection at runtime via environment variables or code
+- `.env` support for API keys and configuration
+- Robust error handling and health checks
 
 ## Project Structure
 
@@ -29,7 +31,7 @@ ai-agent-builder/
 │   │   └── executor.py
 │   ├── llm_providers/
 │   │   ├── __init__.py
-│   │   ├── ollama.py
+│   │   ├── ollama_llm.py
 │   │   ├── openai_llm.py
 │   │   ├── anthropic_llm.py
 │   │   └── anaconda_llm.py
@@ -40,7 +42,10 @@ ai-agent-builder/
 │
 ├── tests/
 │   ├── __init__.py
-│   └── test_agent.py
+│   ├── test_agent.py
+│   ├── test_anaconda_llm.py
+│   ├── test_anthropic_llm.py
+│   └── test_anthropic_direct.py
 │
 ├── requirements.txt
 ├── .env.example
@@ -60,58 +65,58 @@ pip install -r requirements.txt
 
 ### Environment Variables
 
-Copy `.env.example` to `.env` and fill in your API keys:
+Copy `.env.example` to `.env` and fill in your API keys and configuration:
 
 ```
+# Provider selection (default: openai)
+LLM_PROVIDER=openai  # or ollama, anthropic, anaconda
+
+# OpenAI
 OPENAI_API_KEY=your-openai-api-key-here
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_DEFAULT_MODEL=gpt-3.5-turbo
+
+# Anthropic
 ANTHROPIC_API_KEY=your-anthropic-api-key-here
+ANTHROPIC_BASE_URL=https://api.anthropic.com/v1
+ANTHROPIC_MODELS=claude-3-opus-20240229,claude-opus-4
+ANTHROPIC_DEFAULT_MODEL=claude-3-opus-20240229
+
+# Anaconda AI Navigator
 ANACONDA_API_KEY=your-anaconda-api-key-here
+ANACONDA_BASE_URL=http://127.0.0.1:8080
+
+# Ollama
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_DEFAULT_MODEL=llama2
 ```
 
-## Installing as a Package
+## Unified LLM Provider Interface
 
-You can install the project in editable mode (for development):
+The `CommandLLM` class provides a unified interface to all supported LLM providers. It selects the provider based on the `LLM_PROVIDER` environment variable (or you can instantiate a provider directly).
 
-```bash
-pip install -e .
+```python
+from agent_builder.llm_providers import CommandLLM
+
+llm = CommandLLM(model="gpt-3.5-turbo")  # Provider/model can be set via env or argument
+response = llm.generate("Hello, world!")
+models = llm.list_models()
 ```
 
-This will use the `setup.py` file to install the package and its dependencies, allowing you to import `agent_builder` from anywhere in your environment.
+Each provider (`OllamaLLM`, `OpenAILLM`, `AnthropicLLM`, `AnacondaLLM`) implements:
+- `generate(prompt)`
+- `list_models()`
 
-## Building a Distribution
+Providers perform health checks (where applicable) and raise clear errors for missing API keys or connection issues.
 
-To build a source or wheel distribution:
+## Modular Agent Components
 
-```bash
-python setup.py sdist bdist_wheel
-```
+- **Agent**: Composed of `Memory`, `Planner`, and `Executor`.
+- **Memory**: Stores user/agent interactions, supports context retrieval, reset, and update.
+- **Planner**: Abstract base class; concrete planners for each LLM provider (`OllamaPlanner`, `OpenAIPlanner`, `AnthropicPlanner`, `AnacondaPlanner`) use provider-specific defaults and prompt templates.
+- **Executor**: Simple echo implementation, but designed for extension (e.g., tool use, API calls).
 
-## Publishing to PyPI
-
-To publish your package to [PyPI](https://pypi.org/):
-
-1. **Build the distribution:**
-   ```bash
-   python setup.py sdist bdist_wheel
-   ```
-2. **Install Twine (if not already):**
-   ```bash
-   pip install twine
-   ```
-3. **Upload to PyPI:**
-   ```bash
-   twine upload dist/*
-   ```
-   You will be prompted for your PyPI username and password or token.
-
-**Tip:** For test uploads, use [TestPyPI](https://test.pypi.org/):
-```bash
-twine upload --repository testpypi dist/*
-```
-
-For more details, see the [official PyPI packaging guide](https://packaging.python.org/tutorials/packaging-projects/).
-
-## Usage
+## Example Usage
 
 Run the example agent:
 
@@ -125,11 +130,27 @@ You will be prompted to select an LLM provider (Ollama, OpenAI, Anthropic, Anaco
 - **Anaconda AI Navigator:** Make sure your local server is running and models are available.
 - **OpenAI/Anthropic:** Set your API keys in `.env`.
 
+## Error Handling
+
+- All LLM providers handle timeouts and API errors gracefully, returning user-friendly messages.
+- If a required API key is missing, a clear error is raised.
+- Health checks are performed on initialization for Anaconda and Ollama providers.
+
+## Extending the Framework
+
+- Add new LLM providers by implementing `generate` and `list_models` methods.
+- Extend planners or executors for custom logic or tool use.
+
 ## Testing
 
 ```bash
 python -m unittest discover tests
 ```
+
+- Tests cover agent integration, all planners, and memory.
+- Mock LLMs are used for isolated testing.
+- Direct provider tests for Anaconda and Anthropic (including model listing and prompt generation).
+- The test runner in `test_agent.py` allows selection between LangChain and custom providers.
 
 ---
 
