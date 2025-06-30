@@ -1,0 +1,8 @@
+# Requirements for AI Agent Builder
+
+# For now, only standard library is used. Add more as needed.
+requests
+openai
+anthropic
+python-dotenv
+pydantic>=2.10.6,<3.0.0
