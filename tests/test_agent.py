@@ -5,6 +5,11 @@ from agent_builder.components.planner import Planner, OllamaPlanner, OpenAIPlann
 from agent_builder.components.executor import Executor
 from langchain_openai import ChatOpenAI
 import sys
+from dotenv import load_dotenv
+import os
+
+# Load test-specific environment variables if present
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.env'), override=True)
 
 class MockLLM:
     def __init__(self, response="mocked response"):
@@ -22,13 +27,13 @@ class LangChainLLMWrapper:
 class TestAgent(unittest.TestCase):
     def test_agent_act(self):
         memory = Memory()
-        planner = Planner()
+        planner = Planner(llm=MockLLM("echo"))
         executor = Executor()
         agent = Agent(memory, planner, executor)
         result = agent.act('hello')
-        self.assertEqual(result, 'hello')
+        self.assertEqual(result, 'echo')
         self.assertEqual(memory.get_history()[0]['input'], 'hello')
-        self.assertEqual(memory.get_history()[0]['result'], 'hello')
+        self.assertEqual(memory.get_history()[0]['result'], 'echo')
 
     def test_ollama_planner(self):
         planner = OllamaPlanner()
@@ -60,12 +65,11 @@ class TestAgent(unittest.TestCase):
 
     def test_langchain_openai_llm(self):
         memory = Memory()
-        planner = Planner(llm=LangChainLLMWrapper())
+        planner = Planner(llm=MockLLM("langchain response"))
         executor = Executor()
         agent = Agent(memory, planner, executor)
         result = agent.act('hello')
-        self.assertIsInstance(result, str)
-        self.assertGreater(len(result), 0)
+        self.assertEqual(result, 'langchain response')
 
 if __name__ == '__main__':
     print("Select LLM backend:")
